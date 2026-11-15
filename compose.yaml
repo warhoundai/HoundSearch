@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: houndsearch
+      POSTGRES_USER: houndsearch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/configure.py first}
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U houndsearch -d houndsearch]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [internal]
+    restart: unless-stopped
+  api:
+    build: .
+    ports: ['127.0.0.1:8082:8082']
+    environment:
+      HOUNDSEARCH_DATABASE_URL: postgresql://houndsearch:${POSTGRES_PASSWORD}@postgres:5432/houndsearch
+      HOUNDSEARCH_API_KEYS: ${HOUNDSEARCH_API_KEYS}
+      HOUNDSEARCH_ENCRYPTION_KEY: ${HOUNDSEARCH_ENCRYPTION_KEY}
+      HOUNDSEARCH_PROFILES: ${HOUNDSEARCH_PROFILES:-{}}
+      HOUNDSEARCH_PRIMARY_PROVIDER: ${HOUNDSEARCH_PRIMARY_PROVIDER:-}
+      HOUNDSEARCH_TRUSTED_ENDPOINTS: ${HOUNDSEARCH_TRUSTED_ENDPOINTS:-[]}
+    depends_on:
+      postgres: {condition: service_healthy}
+    volumes: [data:/data]
+    networks: [internal,egress]
+    read_only: true
+    tmpfs: [/tmp:size=128m,mode=1777]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    restart: unless-stopped
+networks:
+  internal: {internal: true}
+  egress: {}
+volumes:
+  postgres-data: {}
+  data: {}

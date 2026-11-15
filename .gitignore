@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.egg-info/
+dist/
+data/
+node_modules/
+verification/
+
+node_modules
+
+gha-creds-*.json
+
+models/
+benchmark-results/

@@ -1,0 +1,3 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {HoundSearch} from './index.mjs';
+test('uses own key without redirect or silent retry',async()=>{let calls=0; const c=new HoundSearch({apiKey:'fixture',fetchImpl:async(url,init)=>{calls++; assert.equal(init.redirect,'error'); assert.equal(init.headers.Authorization,'Bearer fixture'); return {ok:true,json:async()=>({results:[]})};}}); assert.deepEqual(await c.search('query'),{results:[]}); assert.equal(calls,1);});
+test('forbids credentialed or insecure remote endpoint',()=>{assert.throws(()=>new HoundSearch({endpoint:'http://example.com',apiKey:'x'}));});

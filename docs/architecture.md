@@ -1,0 +1,11 @@
+# Architecture
+
+REST and MCP clients call an authenticated FastAPI service. Tenant-bound PostgreSQL collections store source text and exact chunk offsets; GIN full-text search works without model downloads. Ingestion uses the public HoundCrawler core and its durable leases, bounded public-network fetches and result cursors. Text and artifacts are data, never executable instructions.
+
+Optional semantic profile uses pgvector HNSW and normalized 384-dimensional all-MiniLM-L6-v2 embeddings, pinned to revision 1110a243fdf4706b3f48f1d95db1a4f5529b4d41. Chunks use tokenizer offsets, 220 tokens and 32-token overlap. Keyword mode uses 200-word chunks. Initial linguistic qualification is English. Query mode fast omits vectors; balanced fuses lexical/vector and configured upstream lists using reciprocal-rank fusion; deep reranks the first 32 results with ms-marco-MiniLM-L6-v2 revision 233902d25c440f23af6f7d6e94d2946bac0bee0a. Both optional models are Apache-2.0; download explicitly. Changing index model/chunking requires a new collection and re-ingestion; do not reuse an existing database across incompatible settings.
+
+Canonicalization removes fragments and known tracking parameters only, preserving meaningful query parameters. Deduplication uses canonical URL; evidence retains full document hash and offsets. Filtering never invents missing publication/language/type metadata. Results from providers are snippets until contents are fetched; snippets alone cannot support generated answers.
+
+Research uses a bounded model-planned query list, checkpoints each query, accumulates deduplicated results and produces quote-bearing claims. PostgreSQL atomic reservations serialize execution-wide request/token/configured-cost use; expired worker leases recover, stale writes fail, cancellation blocks new calls. Model calls reserve conservative input/output ceilings. Unknown outcomes remain reserved. This provides bounded retry behavior, not exactly-once upstream billing.
+
+Full source is stored for provenance. Context truncation is explicit in content responses; embeddings/rerankers may encode only their bounded windows. No lossless universal token compression, global proprietary index, people/company dataset, anti-bot bypass or perfect semantic-truth verifier is claimed.

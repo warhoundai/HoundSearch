@@ -1,0 +1,4 @@
+HoundSearch
+Copyright 2026 WarHound AI contributors
+Licensed under the Apache License, Version 2.0.
+HoundSearch depends on the public Apache-2.0 HoundCrawler core. No private WarHound AI service code is included.

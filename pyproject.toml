@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "houndsearch"
+version = "0.1.0rc1"
+description = "Self-hosted hybrid retrieval and grounded research for AI agents"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+authors = [{name = "WarHound AI"}]
+dependencies = ["houndcrawler @ git+https://github.com/warhoundai/HoundCrawler.git@41ae4694debcaacbd28b25835c59fded712ba797"]
+[project.optional-dependencies]
+semantic = ["sentence-transformers==5.1.2", "torch>=2.6,<3"]
+vertex = ["google-auth>=2,<3", "requests>=2.32,<3"]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.24,<2", "build>=1.2,<2", "pip-audit>=2.9,<3"]
+[project.scripts]
+houndsearch = "houndsearch.cli:main"
+[project.urls]
+Repository = "https://github.com/warhoundai/HoundSearch"
+[tool.hatch.metadata]
+allow-direct-references = true
+[tool.hatch.build.targets.wheel]
+packages = ["src/houndsearch"]
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

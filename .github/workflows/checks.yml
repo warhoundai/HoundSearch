@@ -1,0 +1,58 @@
+name: Checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: houndsearch_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      HOUNDSEARCH_TEST_DATABASE_URL: postgresql://postgres:test-only@127.0.0.1:5432/houndsearch_test
+      HOUNDSEARCH_SCALE: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with: {node-version: '22'}
+      - run: pip install '.[dev]'
+      - run: pytest -q
+      - run: node --test sdk/js/*.test.mjs
+      - run: python scripts/audit-source.py
+      - run: pip-audit --strict
+      - run: python -m build
+      - name: Qualification record
+        if: always()
+        run: cat benchmark-results/*.json || true
+  semantic:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_PASSWORD: test-only, POSTGRES_DB: houndsearch_test}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      HOUNDSEARCH_TEST_DATABASE_URL: postgresql://postgres:test-only@127.0.0.1:5432/houndsearch_test
+      HOUNDSEARCH_SEMANTIC_QUALIFY: 'true'
+      HOUNDSEARCH_MODEL_CACHE: /tmp/houndsearch-models
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install '.[semantic,dev]'
+      - run: houndsearch prepare-models
+      - run: pytest -q tests/test_qualification.py -k semantic
+      - run: cat benchmark-results/semantic.json

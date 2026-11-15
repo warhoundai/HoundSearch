@@ -1,0 +1,11 @@
+# Self-hosting
+
+Default Compose runs PostgreSQL 17 with pgvector available and a non-root read-only API container, with persistent volumes. The host API binds to loopback. Use a TLS reverse proxy, firewall, backups, database encryption at rest, restricted workload identity and bounded CPU/memory before exposing a deployment. User credentials in provider profiles are Fernet-encrypted with your independent HOUNDSEARCH_ENCRYPTION_KEY; source documents and database backups require operator-managed disk/backup encryption. Preserve encryption keys when restoring.
+
+Default keyword installation needs no paid key or model. Create .env with `python scripts/configure.py`. Supply upstream profiles through the authenticated API or your secret manager. Never use WarHound production credentials. API and workers can be split with `houndsearch serve --no-worker` and `houndsearch worker` against the same PostgreSQL database and artifact storage. Each worker currently processes one research execution at a time; scale worker replicas rather than granting agents internal access.
+
+Semantic profile: install `pip install '.[semantic]'`, explicitly run `houndsearch prepare-models`, use pgvector PostgreSQL, set HOUNDSEARCH_MODEL_CACHE, HOUNDSEARCH_SEMANTIC=true and optionally HOUNDSEARCH_RERANK=true. Model downloads use your network and disk; the default image does not include them. Provision a separate custom image or venv, persistent model cache and sufficient RAM. Startup requires local model files and never silently downloads or falls back. Re-ingest into a new collection after changing chunking/model configuration.
+
+Back up PostgreSQL, artifact volumes, model revisions and your encryption key separately. Retention of indexed collections is explicit: DELETE the collection to remove it. Operators should schedule snapshot/terminal-job cleanup using Store.expire_search; research evidence in live/paused jobs is retained. Do not delete database volumes during upgrades. Schema bootstrap is additive; new migrations must be reviewed before production.
+
+Use isolated test databases named houndsearch_test. The application is a self-hosted preview, not an externally operated WarHound API or SLA.
