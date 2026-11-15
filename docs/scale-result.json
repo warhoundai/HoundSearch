@@ -1,0 +1,16 @@
+{
+  "fixture": "100000 synthetic documents; 200 deterministic held-out document-ID queries",
+  "documents": 100000,
+  "queries": 200,
+  "hit_at_1": 1,
+  "p50_ms": 3.3670620000094686,
+  "p95_ms": 3.459574000004295,
+  "index_seconds": 5.964406688000011,
+  "total_seconds": 6.663037024000005,
+  "database_bytes": 92714675,
+  "cpu_count": 2,
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "commit": "c1ff86664b9d62e722f5582abcb1a12b6fdc02c8",
+  "semantic_scale": "separate profile",
+  "competitor_comparison": "not run"
+}

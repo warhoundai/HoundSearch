@@ -126,3 +126,14 @@ async def test_research_runs_through_real_model_reservations(store,settings,monk
  assert await Worker(e).research_once()
  out=store.job('alpha',j['id']);assert out['status']=='completed' and not out['result']['abstained'];assert len(calls)==2
  usage=Budget(store,out,settings).usage();assert usage['tokens_used_or_reserved']==80 and usage['requests']==4
+@pytest.mark.asyncio
+async def test_answer_compresses_context_before_reservation(store,settings):
+ e=Engine(settings,store);cid=store.create_collection('alpha','Docs','public')['id']
+ for i in range(8):index(e,'alpha',cid,f'https://example.com/{i}','security '+('Long evidence text. '*1000))
+ seen=[]
+ async def complete(tenant,request,budget,messages,output=None):
+  import json
+  seen.append(messages);assert len(json.dumps(messages,ensure_ascii=False).encode())+4096+request.max_output_tokens<=20000
+  return {'claims':[]},{}
+ e.complete=complete;request=Answer(query='security',model_profile='mine',budget=Limits(max_tokens=20000));item,_=store.new_job('alpha','answer',request.model_dump(mode='json'),status='running')
+ out=await e.answer('alpha',request,Budget(store,item,settings));assert seen and out['abstained'] and any(s['truncated'] for s in out['sources'])

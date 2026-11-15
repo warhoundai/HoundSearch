@@ -1,0 +1,10 @@
+name: Bug report
+description: Report a reproducible problem without credentials or customer data.
+body:
+  - type: textarea
+    id: reproduction
+    attributes: {label: Reproduction, description: Include version, environment, minimal steps and expected versus actual behavior. Remove credentials and private source content.}
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes: {label: Safe diagnostics, description: Sanitized error codes and controlled fixtures only. Security vulnerabilities should be reported privately.}
