@@ -7,7 +7,7 @@
 
 Search your own indexed pages with PostgreSQL full-text search, optionally combine local neural retrieval and reranking, and explicitly connect your own Exa, Brave, Serper or SearXNG account. Build answers and resumable research from fetched evidence using your own model. No WarHound keys, hosted quota or mandatory paid provider.
 
-**0.1.0rc1 is a preview**, not a claim of Exa parity or a proprietary global web index. [Verification](docs/verification.md) distinguishes local tests, synthetic scale checks, optional model qualification and external provider acceptance.
+**0.1.0rc2 is a preview**, not a claim of Exa parity or a proprietary global web index. [Verification](docs/verification.md) distinguishes local tests, synthetic scale checks, optional model qualification and external provider acceptance.
 
 ## Run locally
 
