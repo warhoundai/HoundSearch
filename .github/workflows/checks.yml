@@ -28,8 +28,10 @@ jobs:
       - run: pytest -q
       - run: node --test sdk/js/*.test.mjs
       - run: python scripts/audit-source.py
-      - run: pip-audit --strict
+      - run: python scripts/audit-dependencies.py
       - run: python -m build
+      - run: docker build -t houndsearch:test .
+      - run: python scripts/container-smoke.py
       - name: Qualification record
         if: always()
         run: cat benchmark-results/*.json || true

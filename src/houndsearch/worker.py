@@ -62,9 +62,10 @@ class Worker:
   finally:task.cancel();await asyncio.gather(task,return_exceptions=True)
   return True
  async def run(self):
-  collector=asyncio.create_task(self.collector.run());research=None
+  collector=asyncio.create_task(self.collector.run());research=None;last_cleanup=0
   try:
    while not self.stopping:
+    if time.monotonic()-last_cleanup>3600:self.store.expire_search(self.engine.settings.retention_days);last_cleanup=time.monotonic()
     if research is None or research.done():
      if research:await research
      research=asyncio.create_task(self.research_once())

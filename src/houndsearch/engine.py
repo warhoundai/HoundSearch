@@ -29,7 +29,7 @@ class Engine:
   if any(secret and secret in request.query for secret in self.profiles.known_secrets(tenant)):raise ScrapeError('SECRET_IN_QUERY','Query contains a configured credential',422)
   return names
  async def search(self,tenant,request,budget,query=None,embedding=None):
-  names=self.check_request(tenant,request);query=query or request.query;budget.active()
+  names=self.check_request(tenant,request);query=query or request.query;budget.active();budget.reserve_call('fetch')
   if any(secret and secret in query for secret in self.profiles.known_secrets(tenant)):raise ScrapeError('SECRET_IN_QUERY','Query contains a configured credential',422)
   if self.models.enabled and request.mode!='fast' and embedding is None:embedding=(await asyncio.to_thread(self.models.embed,[query]))[0]
   count={'fast':40,'balanced':100,'deep':300}[request.mode]
@@ -59,12 +59,18 @@ class Engine:
   url=canonical(url);doc=None if refresh else self.store.document(tenant,url,collections)
   if doc:text=doc['body'];meta=doc['metadata'];sha=doc['hash'];kind='indexed_document'
   else:
-   result=await self.collector.scrape(tenant,url,Options(formats=['text'],render='never',max_bytes=8388608,max_age=0 if refresh else 300));text=result['data']['text'];meta=result['metadata'];sha=result['content_sha256'];kind='fetched_document'
+   result=await self.collector.scrape(tenant,url,Options(formats=['text'],render='never',max_bytes=8388608,max_age=0 if refresh else 300));text=result.get('data',{}).get('text')
+   if not isinstance(text,str):raise ScrapeError('CONTENT_UNAVAILABLE','Parser did not return text',422)
+   meta=result['metadata'];sha=result.get('content_sha256') or hashlib.sha256(text.encode()).hexdigest();kind='fetched_document'
+  if any(secret and secret in text for secret in self.profiles.known_secrets(tenant)):raise ScrapeError('SECRET_IN_SOURCE','Source contains a configured credential and cannot be returned or sent to a model',422)
   return {'url':url,'text':text[:maximum],'metadata':meta,'sha256':sha,'evidence_kind':kind,'truncated':len(text)>maximum,'characters':len(text),'returned_characters':min(len(text),maximum),'start':0,'end':min(len(text),maximum)}
  async def similar(self,tenant,request,budget):
   budget.reserve_call('fetch');source=await self.content(tenant,request.url,12000,False,request.collections)
-  query=' '.join(source['text'].split()[:100]);embedding=None
-  if self.models.enabled:embedding=(await asyncio.to_thread(self.models.embed,[source['text'][:3000]]))[0]
+  import re
+  from collections import Counter
+  terms=Counter(w.lower() for w in re.findall(r'[A-Za-z]{4,}',source['text']) if w.lower() not in {'this','that','with','from','have','will','your','their','they','were','been','about'})
+  query=' OR '.join(w for w,_ in terms.most_common(12)) or request.query;embedding=None
+  if self.models.enabled and request.mode!='fast':embedding=(await asyncio.to_thread(self.models.embed,[source['text'][:3000]]))[0]
   # Never forward private source text to upstreams without explicit consent.
   if request.providers or self.settings.primary_provider:
    self.check_request(tenant,request)

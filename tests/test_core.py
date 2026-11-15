@@ -110,3 +110,19 @@ async def test_worker_import_and_resume(store,settings):
  assert w.ingestion('alpha',i['id'])['indexed']==1 and store.candidates('alpha','browser')[0]
  with store.pool.connection() as c:c.execute('UPDATE hsearch_ingestions SET lease_until=0')
  await w.ingest_once();assert w.ingestion('alpha',i['id'])['status']=='completed'
+@pytest.mark.asyncio
+async def test_research_runs_through_real_model_reservations(store,settings,monkeypatch):
+ from houndsearch.worker import Worker
+ from houndcrawler.providers import Providers
+ e=Engine(settings,store);cid=store.create_collection('alpha','Docs','public')['id'];index(e,'alpha',cid,'https://example.com/','Session security cookies use secure flags.')
+ e.profiles.put('alpha','mine',{'kind':'gemini','key':'user-fixture-only','model':'fixture-model'})
+ calls=[]
+ async def complete(self,messages,max_output_tokens):
+  calls.append(messages)
+  value={'queries':['session security']} if 'Plan web research' in messages[0]['content'] else {'claims':[{'text':'Cookies use secure flags.','url':'https://example.com/','quote':'cookies use secure flags.'}]}
+  return value,{'provider_tokens':{'input_tokens':25,'output_tokens':15,'reasoning_tokens':5}}
+ monkeypatch.setattr(Providers,'_complete',complete)
+ j,_=store.new_job('alpha','research',Answer(query='session security',model_profile='mine',budget=Limits(max_requests=10,max_steps=2)).model_dump(mode='json'))
+ assert await Worker(e).research_once()
+ out=store.job('alpha',j['id']);assert out['status']=='completed' and not out['result']['abstained'];assert len(calls)==2
+ usage=Budget(store,out,settings).usage();assert usage['tokens_used_or_reserved']==80 and usage['requests']==4

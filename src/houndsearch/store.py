@@ -62,7 +62,7 @@ class Store(CollectorStore):
  def document(self,tenant,url,collections=()):
   with self.pool.connection() as c:return c.execute('SELECT * FROM hsearch_documents WHERE tenant=%s AND url=%s'+(' AND collection=ANY(%s)' if collections else '')+' ORDER BY created DESC LIMIT 1',[tenant,url]+([list(collections)] if collections else [])).fetchone()
  def new_job(self,tenant,kind,request,idempotency=None,status='queued'):
-  sha=fingerprint(request);now=time.time()
+  sha=fingerprint({'kind':kind,'request':request});now=time.time()
   with self.pool.connection() as c:
    r=c.execute('INSERT INTO hsearch_jobs(id,tenant,kind,request,status,created,updated,idempotency,request_hash) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(tenant,idempotency) DO NOTHING RETURNING *',(uuid.uuid4().hex,tenant,kind,Jsonb(request),status,now,now,idempotency,sha)).fetchone()
    fresh=bool(r)

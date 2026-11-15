@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 authors = [{name = "WarHound AI"}]
-dependencies = ["houndcrawler @ git+https://github.com/warhoundai/HoundCrawler.git@41ae4694debcaacbd28b25835c59fded712ba797"]
+dependencies = ["houndcrawler @ git+https://github.com/warhoundai/HoundCrawler.git@eed3614a1fc27fb0829c3bda04fa000292c4de15"]
 [project.optional-dependencies]
 semantic = ["sentence-transformers==5.1.2", "torch>=2.6,<3"]
 vertex = ["google-auth>=2,<3", "requests>=2.32,<3"]
